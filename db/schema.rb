@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_05_22_215405) do
+ActiveRecord::Schema[7.0].define(version: 2023_05_23_022521) do
   create_table "blocks", force: :cascade do |t|
     t.integer "height"
     t.integer "n_txs"
@@ -19,6 +19,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_22_215405) do
     t.json "validators"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "status", default: 0
   end
 
 end

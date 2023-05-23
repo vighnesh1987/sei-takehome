@@ -25,3 +25,7 @@ set :environment, "development"
 every 1.minute do
   rake 'indexer:run'
 end
+
+every 1.minute do
+  rake 'indexer:fill'
+end
