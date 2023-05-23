@@ -18,6 +18,9 @@ http://127.0.0.1:3000/api/v1/blocks_proposed_by_validator?proposer=60A433D28B087
 
 http://127.0.0.1:3000/api/v1/number_of_transactions_made?n=4
 
+## Database
+You can explore everything that's stored inside `rails dbconsole`. I've used SQLite as the database.
+
 ## Note
 For an unpaid take-home interview project with a expected 24h turnaround, I expect faster responses to questions :)
 As such I'm choosing to not implement the requirement that I had asked a question about. I believe you should get a fair sense of my coding capabilities with what I'm submitting. Looking forward to continuing our conversation!
