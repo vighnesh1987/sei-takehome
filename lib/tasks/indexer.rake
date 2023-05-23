@@ -12,7 +12,7 @@ def lowest_height_available
       begin
         ret = body["error"]["data"].scan(/lowest height is (\d+)/)[0][0].to_i
       rescue error
-        Rails.logger.error("#{error}: Failed to get lowest_height_available from #{body}")
+        Rails.logger.error "[lowest_height_available()]: Failed to get lowest_height_available from #{body}, #{error}"
       end
     }
   )
@@ -26,7 +26,9 @@ def current_height
     -> (body) {
       ret = body["result"]["sync_info"]["latest_block_height"].to_i
     },
-    -> (body) {} # TODO: Handle error?
+    -> (body) {
+      Rails.logger.error "[current_height()]: #{body}"
+    }
   )
   ret
 end
@@ -45,8 +47,8 @@ def get_block height
       }
     },
     -> (body) {
-      puts "Error: {body}"
-    } # TODO: Handle error?
+      Rails.logger.error "[get_block(#{height})]: #{body}"
+    }
   )
 end
 
@@ -54,10 +56,14 @@ namespace :indexer do
   task run: :environment do
     starting = [Block::STARTING_HEIGHT, Block.maximum(:height) || 0].max
     current = current_height()
-    puts "Queueing blocks with heights #{starting..current}"
+    Rails.logger.debug "Queueing blocks with heights #{starting..current}"
     heights = (starting..current).to_a - Block.where(height: starting..current).map(&:height)
-    puts "Creating blocks with heights #{heights}"
-    Block.create(heights.map {|ht| [height: ht, status: :queued]})
+    Rails.logger.debug "Creating blocks with heights #{heights}"
+    begin
+      Block.create(heights.map {|ht| [height: ht, status: :queued]})
+    rescue error
+      Rails.logger.error "[indexer:run] #{error}"
+    end
   end
 
   task fill: :environment do
@@ -65,14 +71,19 @@ namespace :indexer do
     queued_heights = Block.where(status: :queued).map(&:height)
     queued_heights.each_slice(100) do |block_heights|
       threads << Thread.new do
-        puts "thread for #{block_heights}"
+        Rails.logger.debug "thread for #{block_heights}"
         ActiveRecord::Base.connection_pool.with_connection do
           block_heights.each do |ht|
             block_params = get_block(ht)
             block = Block.find_or_initialize_by(height: ht)
             block.assign_attributes(block_params)
             block.status = :fetched
-            block.save # Error handling?
+            begin
+              block.save # Error handling?
+            rescue error
+              Rails.logger.error "[indexer:fill] height: #{ht} #{error}"
+            end
+            Rails.logger.debug "Saved #{block.height}"
           end
         end
       end
