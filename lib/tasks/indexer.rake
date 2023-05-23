@@ -36,15 +36,17 @@ def get_block height
   make_request(
     "/block?height=#{height}",
     -> (body) {
-      ret = Block.new(
+      ret = {
         height: height,
         n_txs: body["result"]["block"]["data"]["txs"].size,
         txs: body["result"]["block"]["data"]["txs"],
         proposer: body["result"]["block"]["header"]["proposer_address"],
         validators: body["result"]["block"]["last_commit"]["signatures"]
-      )
+      }
     },
-    -> (body) {} # TODO: Handle error?
+    -> (body) {
+      puts "Error: {body}"
+    } # TODO: Handle error?
   )
 end
 
@@ -53,17 +55,26 @@ namespace :indexer do
     starting = [Block::STARTING_HEIGHT, Block.maximum(:height) || 0].max
     current = current_height()
     puts "Queueing blocks with heights #{starting..current}"
-    Block.create((starting..current).map {|ht| [height: ht, status: :queued]})
+    heights = (starting..current).to_a - Block.where(height: starting..current).map(&:height)
+    puts "Creating blocks with heights #{heights}"
+    Block.create(heights.map {|ht| [height: ht, status: :queued]})
   end
 
   task fill: :environment do
     threads = []
-    Block.where(status: :queued).each do |block|
+    queued_heights = Block.where(status: :queued).map(&:height)
+    queued_heights.each_slice(100) do |block_heights|
       threads << Thread.new do
-        block = get_block(block.height)
-        block.status = :fetched
-        # Error handling?
-        block.save
+        puts "thread for #{block_heights}"
+        ActiveRecord::Base.connection_pool.with_connection do
+          block_heights.each do |ht|
+            block_params = get_block(ht)
+            block = Block.find_or_initialize_by(height: ht)
+            block.assign_attributes(block_params)
+            block.status = :fetched
+            block.save # Error handling?
+          end
+        end
       end
     end
     threads.map(&:join)

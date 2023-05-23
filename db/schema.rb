@@ -10,16 +10,15 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_05_23_022521) do
-  create_table "blocks", force: :cascade do |t|
-    t.integer "height"
+ActiveRecord::Schema[7.0].define(version: 2023_05_22_215405) do
+  create_table "blocks", primary_key: "height", force: :cascade do |t|
     t.integer "n_txs"
     t.json "txs"
     t.string "proposer"
     t.json "validators"
+    t.integer "status", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "status", default: 0
   end
 
 end

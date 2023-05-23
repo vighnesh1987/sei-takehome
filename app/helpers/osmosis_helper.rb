@@ -4,6 +4,8 @@ module OsmosisHelper
     http = Net::HTTP.new(url.host, url.port)
     http.use_ssl = true
 
+    puts "making request to #{url}"
+
     request = Net::HTTP::Get.new(url.request_uri)
     response = http.request(request)
 
